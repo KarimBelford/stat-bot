@@ -1,48 +1,56 @@
-const {InverseClient} = require('bybit-api');
-const fs = require('fs');
+const { signalPositiveTicker, signalNegativeTicker } = require("./botInfo");
+const { checkOpenPositions, checkActiveOrder } = require("./checkPositions");
+const { closeAllPositions } = require("./closePosition");
+const { settingLeverage } = require("./execution");
+const { manageNewTrade } = require("./tradeManagement");
 
 
-const ticker1 = 'BTCUSD';
-const ticker2 = 'ETHUSD';
 
-signalPositiveTicker = ticker2;
-signalNegativeTicker = ticker1;
-roundingTicker1 = 2;
-roundingTicker2 = 2;
-quantityRoundingTicker1 = 0;
-quantityRoundingTicker2 = 0;
+const signalSignPositive = false
+let killSwitch = 0
+let startNewTrade
 
-limitOrderBasis = true;
+settingLeverage(signalPositiveTicker);
+settingLeverage(signalNegativeTicker)
 
-tradingCapital = 2000;
-failSafe = 0.20;
+let kill = 1
+while(kill ===1){
+    setTimeout(async() => {
+        checkPositiveTickerOpen = await checkOpenPositions(signalPositiveTicker);
+        checkNegativeTickerOpen = await checkOpenPositions(signalNegativeTicker);
+        checkPositiveTickerActive = await checkActiveOrder(signalPositiveTicker);
+        checkNegativeTickerActive = await checkActiveOrder(signalNegativeTicker);
+        console.log(checkPositiveTickerOpen)
+        console.log(checkPositiveTickerActive)
+        console.log(checkNegativeTickerOpen)
+        console.log(checkNegativeTickerActive)
+        if(!checkPositiveTickerOpen && !checkNegativeTickerOpen && !checkPositiveTickerActive && !checkNegativeTickerActive){
+            startNewTrade = true
+        }else {
+            console.log('clossing')
+            await closeAllPositions()
+            startNewTrade = true
 
-signalTrigger = 1.1;
+        }
 
-timeframe = 60;
-kline_limit = 200;
-zScoreWindow = 21;
+        if(!checkPositiveTickerOpen && !checkNegativeTickerOpen && !checkPositiveTickerActive && !checkNegativeTickerActive){
+            startNewTrade = true
+            killSwitch = 0
+        }
 
-const API_KEY = 'WMTy0NWg8tJinG1zy0';
-const API_SECRET = 'U9S0ddY4cBqzuOCcBo7gcryJQpAp3dlD7Qhb';
-const useTestnet = true;
+        if (startNewTrade && killSwitch === 0){
+            console.log('running')
+            let kswitch = await manageNewTrade(killSwitch)
+            killSwitch = kswitch
+            console.log(kswitch)
+            
+        }
 
-
-//Initalize market
-const client = new InverseClient({
-    key: API_KEY,
-    secret: API_SECRET,
-    testnet: useTestnet,
-    baseUrl:'https://api-testnet.bybit.com',
-    },
-)
-
-module.exports = {
-    ticker1, 
-    ticker2,
-    failSafe,
-    roundingTicker1,
-    roundingTicker2,
-    quantityRoundingTicker1,
-    quantityRoundingTicker2
+        if(killSwitch === 2){
+            console.log('clossing')
+            killSwitch = await closeAllPositions(killSwitch)
+            setTimeout(() => {}, 5000)
+        }
+    }, 3000)
+    kill = 3
 }

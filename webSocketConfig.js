@@ -1,4 +1,4 @@
-const {ticker1,ticker2} = require('./bot')
+const {ticker1,ticker2} = require('./botInfo')
 const { WebsocketClient } = require('bybit-api');
 const API_KEY = 'WMTy0NWg8tJinG1zy0';
 const PRIVATE_KEY = 'U9S0ddY4cBqzuOCcBo7gcryJQpAp3dlD7Qhb';

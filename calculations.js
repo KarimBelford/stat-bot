@@ -1,12 +1,14 @@
 const {
+    ws,
     ticker1,
     ticker2,
     failSafe,
+    capital,
     roundingTicker1,
     roundingTicker2,
     quantityRoundingTicker1,
     quantityRoundingTicker2
-} = require('./bot')
+} = require('./botInfo')
 const { WebsocketClient } = require('bybit-api');
 
 const getClosingPrice = (prices) => {
@@ -20,9 +22,12 @@ const getClosingPrice = (prices) => {
         return closePrices
     }
 }
-    const bidItems = [];
-    const askItems = [];
-const getTradeDetails = (orderbook, direction = 'Long', capital) => {
+const bidItems1 = [];
+const askItems1 = [];
+const bidItems2 = [];
+const askItems2 = [];
+
+const getTradeDetails1 = (ticker,orderbook, direction = 'Long', capital) => {
     let priceRounding = 20;
     let quantityRounding = 20;
     let orderPrice = 0;
@@ -32,7 +37,7 @@ const getTradeDetails = (orderbook, direction = 'Long', capital) => {
    
 
     if(orderbook.data){
-        //console.log(orderbook.data)
+        
         if(orderbook.data[0]['symbol']=== ticker1){
             priceRounding = roundingTicker1;
             quantityRounding = quantityRoundingTicker1;
@@ -40,60 +45,122 @@ const getTradeDetails = (orderbook, direction = 'Long', capital) => {
             priceRounding = roundingTicker2;
             quantityRounding= quantityRoundingTicker2;
         }
-        orderbook.data.forEach(level =>{
-            if(level['side'] === 'Buy'){
-                bidItems.push(level['price']);
-            }
-            else{
-                askItems.push(level['price']);
-            }
-        })
-        console.log('bid',bidItems)
-        console.log('ask',askItems)
-        if(bidItems.length>0 && askItems.length>0){
-          bidItems.sort((a,b) => a-b).reverse(); 
-          askItems.sort((a,b) => a-b);
+        if(ticker === ticker1){
+            orderbook.data.forEach(level =>{
+                if(level['symbol']===ticker1 && level['side'] === 'Buy'){
+                    bidItems1.push(level['price']);
+                }
+                else if(level['symbol']===ticker1 && level['side'] === 'Sell'){
+                    askItems1.push(level['price']);
+                }
+    
+                
+            })
+        }else{
+            orderbook.data.forEach(level =>{
+                if(level['symbol']===ticker2 && level['side'] === 'Buy'){
+                    bidItems1.push(level['price']);
+                }
+                else if(level['symbol']===ticker2 && level['side'] === 'Sell'){
+                    askItems1.push(level['price']);
+                }
+    
+                
+            })
+        }
+        
+        if(bidItems1.length>0 && askItems1.length>0){
+          bidItems1.sort((a,b) => b-a); 
+          askItems1.sort((a,b) => a-b);
 
-          nearestAsk = askItems[0];
-          nearestBid = bidItems[0];
+          
 
+          nearestAsk = askItems1[0];
+          nearestBid = bidItems1[0];
+            
           if(direction === "Long"){
-            orderPrice = nearestBid;
+            orderPrice = Number(nearestBid);
             stopLoss = Math.round(orderPrice*(1-failSafe),priceRounding)
           }else{
-            orderPrice = nearestAsk;
-            stopLoss = Math.round(orderPrice*(1-failSafe),priceRounding)
+            orderPrice = Number(nearestAsk);
+            stopLoss = Math.round(orderPrice*(1+failSafe),priceRounding)
           }
 
           quantity = Math.round(capital/orderPrice,quantityRounding)
         }
-       // console.log(orderPrice,stopLoss,quantity)
+        
+            return{orderPrice,stopLoss,quantity}
+        
+
+    }
+} 
+
+const getTradeDetails2 = (ticker,orderbook, direction = 'Short', capital) => {
+    let priceRounding = 20;
+    let quantityRounding = 20;
+    let orderPrice = 0;
+    let quantity = 0;
+    let stopLoss= 0;
+    
+   
+
+    if(orderbook.data){
+        
+        if(orderbook.data[0]['symbol']=== ticker2){
+            priceRounding = roundingTicker2;
+            quantityRounding = quantityRoundingTicker2;
+        }else{
+            priceRounding = roundingTicker1;
+            quantityRounding= quantityRoundingTicker1;
+        }
+
+        if(ticker === ticker2){
+            orderbook.data.forEach(level =>{
+                
+                if(level['symbol']===ticker2 && level['side'] === 'Buy'){
+                    bidItems2.push(level['price']);
+                }
+                else if(level['symbol']===ticker2 && level['side'] === 'Sell'){
+                    askItems2.push(level['price']);
+                }                
+            })
+        }else{
+            orderbook.data.forEach(level =>{
+                if(level['symbol']===ticker1 && level['side'] === 'Buy'){
+                    bidItems1.push(level['price']);
+                }
+                else if(level['symbol']===ticker1 && level['side'] === 'Sell'){
+                    askItems1.push(level['price']);
+                }                
+            })
+        }
+        
+        if(bidItems2.length>0 && askItems2.length>0){
+          bidItems2.sort((a,b) => a-b).reverse(); 
+          askItems2.sort((a,b) => a-b);
+
+          nearestAsk = askItems2[0];
+          nearestBid = bidItems2[0];
+
+          if(direction === "Long"){
+            orderPrice = Number(nearestBid);
+            stopLoss = Math.round(orderPrice*(1-failSafe),priceRounding)
+          }else{
+            orderPrice = Number(nearestAsk);
+            stopLoss = Math.round(orderPrice*(1+failSafe),priceRounding)
+          }
+
+          quantity = Math.round(capital/orderPrice,quantityRounding)
+        }
         return{orderPrice,stopLoss,quantity}
 
 
     }
 }
 
-const API_KEY = 'WMTy0NWg8tJinG1zy0';
-const PRIVATE_KEY = 'U9S0ddY4cBqzuOCcBo7gcryJQpAp3dlD7Qhb';
-
-const wsConfig = {
-    key: API_KEY,
-    secret: PRIVATE_KEY,
-    testnet: true,
-    market: 'inverse',
-    wsUrl: 'wss://stream-testnet.bybit.com/realtime'
-};
-
-const ws = new WebsocketClient(wsConfig);
-
-
-
-// and/or subscribe to individual topics on demand
-ws.subscribe([`trade.${ticker1}`,`trade.${ticker2}`]);
-ws.on('update', (data) => {
-    getTradeDetails(data,'Long',20000)
-   //console.log('raw message received ', data);
-     //console.log('raw message received ', JSON.stringify(data, null, 2));
-  });
+module.exports ={
+    getTradeDetails1,
+    getTradeDetails2,
+    getClosingPrice
+}
 

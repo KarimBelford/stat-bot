@@ -1,0 +1,88 @@
+const {
+    ticker1,
+    ticker2,
+    ws,
+    client,
+    timeframe,
+    klineLimit
+} = require('./botInfo')
+
+const {getTradeDetails1,getTradeDetails2} = require('./calculations')
+const {getTickerPrices} = require('./priceHistory')
+
+const getLatestZscore = async() =>{
+    ws.subscribe([`trade.${ticker1}`,`trade.${ticker2}`])
+    let isCalled1 = false;
+    let latestZscore;
+    let signalPositive;
+
+    return new Promise((resolve, reject) => {
+        const orderbook1 = ws.on('update', async(data) => {
+            if (!isCalled1) {
+                const {orderPrice: orderPrice1} = getTradeDetails1(ticker1,data);
+                const {orderPrice: orderPrice2} = getTradeDetails1(ticker2,data);
+                if(orderPrice1 && orderPrice2>0){
+                    isCalled1 = true 
+                    let {series1,series2} = await getTickerPrices()
+                    console.log(series1,series2)
+                    if(series1.length > 0 && series2.length > 0){
+                        series1.pop()
+                        series2.pop();
+                        series1.push(orderPrice1);
+                        series2.push(orderPrice2);
+                        const spread = calculateSpread(series1, series2);
+                        const mean = calculateMean(spread);
+                        const standardDeviation = calculateStandardDeviation(spread, mean);
+                        const zScores = []
+                        for (let i = 0; i < spread.length; i++) {
+                            zScores.push(calculateZScore(spread[i], mean, standardDeviation));
+                        }
+                        latestZscore = zScores.pop()
+                        if(latestZscore > 0){
+                            signalPositive = true
+                        }else {
+                            signalPositive = false
+                        }
+                        ws.unsubscribe([`trade.${ticker1}`,`trade.${ticker2}`])
+                        resolve({latestZscore,signalPositive});
+                    }
+                }
+            }
+        });
+    });
+}
+
+
+
+const calculateSpread = (series1, series2) => {
+    // assuming series1 and series2 are arrays of the same length
+    let spread = []
+    for (let i = 0; i < series1.length; i++) {
+        spread.push(series1[i] - series2[i]);
+    }
+   // console.log(spread);
+    return spread;
+}
+
+const calculateMean = (spread) => {
+    let sum = 0;
+    for (let i = 0; i < spread.length; i++) {
+        sum += spread[i];
+    }
+    return sum / spread.length;
+}
+
+const calculateStandardDeviation = (spread, mean) => {
+    let sum = 0;
+    for (let i = 0; i < spread.length; i++) {
+        sum += Math.pow(spread[i] - mean, 2);
+    }
+    return Math.sqrt(sum / (spread.length - 1));
+}
+
+const calculateZScore = (x, mean, standardDeviation) => {
+    return (x - mean) / standardDeviation;
+}
+
+module.exports = {getLatestZscore}
+
