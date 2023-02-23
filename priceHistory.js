@@ -9,7 +9,10 @@ const {
 } = require('./botInfo')
 
 const {getClosingPrice} = require('./calculations')
-
+/*
+function is used to get the start time, end time, 
+and next time interval based on the given timeframe and kline limit
+*/
 const getTimestamps = () => {
     let timeStartDate = 0;
     let timeNextDate = 0;
@@ -28,7 +31,10 @@ const getTimestamps = () => {
 
     return {timeStartSeconds, timeNowSeconds, timeNextSeconds};
 }
-
+/*
+function is used to get the market prices for the given ticker and time period
+uses getMarkPriceKline () method from API
+ */
 const getPrice = async(ticker) => {
     let {timeStartSeconds:startTime} = getTimestamps()
     prices = await client.getMarkPriceKline({symbol: ticker, interval: timeframe, from: startTime})
@@ -38,6 +44,12 @@ const getPrice = async(ticker) => {
     return prices.result
 }
 
+/*
+function to fetch the prices of two different 
+tickers. Then it calls getClosingPrice() 
+function to extract the closing prices from 
+the price data and assigns them to two different arrays 
+ */
 const getTickerPrices = async() => {
     let series1 = [];
     let series2 = [];
@@ -53,17 +65,19 @@ const getTickerPrices = async() => {
 
 }
 
-
-
-
-
-
-const getTickerLiquidity = async() => {
+/*
+function uses client.getTradeRecords() method from API
+to retrieve the trade records a ticker with a limit of 50. 
+Then, it checks if the result contains any data, and  
+it extracts the exec_qty field from each record and 
+calculates the sum and average of these values.
+ */
+const getTickerLiquidity = async(ticker) => {
     let sum;
     let avgqty;
     let latestPrice;
     trades = await client.getTradeRecords({
-        symbol:ticker1,
+        symbol:ticker,
         limit:50,
        
     })

@@ -10,40 +10,38 @@ const signalSignPositive = false
 let killSwitch = 0
 let startNewTrade
 
+// setting leverages for both tickers
 settingLeverage(signalPositiveTicker);
 settingLeverage(signalNegativeTicker)
 
 let kill = 1
 while(kill ===1){
+    //using setTimeout to run bot on an interval
     setTimeout(async() => {
+        //check if previous positions are closed before starting new trade 
         checkPositiveTickerOpen = await checkOpenPositions(signalPositiveTicker);
         checkNegativeTickerOpen = await checkOpenPositions(signalNegativeTicker);
         checkPositiveTickerActive = await checkActiveOrder(signalPositiveTicker);
         checkNegativeTickerActive = await checkActiveOrder(signalNegativeTicker);
-        console.log(checkPositiveTickerOpen)
-        console.log(checkPositiveTickerActive)
-        console.log(checkNegativeTickerOpen)
-        console.log(checkNegativeTickerActive)
-        if(!checkPositiveTickerOpen && !checkNegativeTickerOpen && !checkPositiveTickerActive && !checkNegativeTickerActive){
-            startNewTrade = true
-        }else {
-            console.log('clossing')
-            await closeAllPositions()
-            startNewTrade = true
+        
 
-        }
-
+        //close positions if they are still open 
         if(!checkPositiveTickerOpen && !checkNegativeTickerOpen && !checkPositiveTickerActive && !checkNegativeTickerActive){
             startNewTrade = true
             killSwitch = 0
+        }else {
+            console.log('clossing')
+            await closeAllPositions()
+            killSwitch = 0
+            startNewTrade = true
+
         }
 
         if (startNewTrade && killSwitch === 0){
             console.log('running')
             let kswitch = await manageNewTrade(killSwitch)
             killSwitch = kswitch
-            console.log(kswitch)
-            
+                       
         }
 
         if(killSwitch === 2){

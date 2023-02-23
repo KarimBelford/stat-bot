@@ -2,17 +2,18 @@ const {LinearClient,WebsocketClient} = require('bybit-api');
 const fs = require('fs');
 
 
-
+// let ticker2 = 'SLPUSDT'
+// let ticker1 = 'AXSUSDT'
 let ticker1 = 'TLMUSDT'
 let ticker2 = 'SXPUSDT'
-let capital = 2000
+let capital = 20000
 
 signalPositiveTicker = ticker1;
 signalNegativeTicker = ticker2;
-roundingTicker1 = 6;
-roundingTicker2 = 4;
-quantityRoundingTicker1 = 0;
-quantityRoundingTicker2 = 1;
+roundingTicker1 = 3;
+roundingTicker2 = 5;
+quantityRoundingTicker1 = 1;
+quantityRoundingTicker2 = 0;
 
 limitOrderBasis = true;
 
@@ -21,7 +22,7 @@ failSafe = 0.25;
 
 signalTrigger = 0.1;
 
-timeframe = 'D';
+timeframe = 60;
 klineLimit = 200;
 zScoreWindow = 21;
 

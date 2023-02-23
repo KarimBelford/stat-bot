@@ -8,11 +8,11 @@ const {
 } = require('./botInfo')
 const {getTickerLiquidity} = require('./priceHistory')
 const{getLatestZscore} = require('./zScoreCalc')
-const{initializeOrder, initializeOrder2, initializeOrder1} = require('./execution')
+const{initializeOrder, initializeOrder1} = require('./execution')
 const {reviewOrder} = require('./orderReview')
 const { checkActiveOrder } = require('./checkPositions')
 
-
+//funtion used to manage new trade 
 const manageNewTrade = (killSwitch) => {
     return new Promise(async(resolve,reject) =>{   
     let signalSide = ''
@@ -24,18 +24,23 @@ const manageNewTrade = (killSwitch) => {
     let latestPriceLong 
     let latestPriceShort
 
+    //get zScore before and if its positive or negative
     let {latestZscore,signalPositive} = await getLatestZscore();
 
-    console.log('initial zScore',latestZscore)
-   
+    //console.log('initial zScore',latestZscore)
+        
+    //check if zScore is above threshold
     if(Math.abs(latestZscore)> signalTrigger){
         hot = true
     }
 
+    //start trade if zScore above threshold and killSwitch is 0
     if(hot && killSwitch===0){
+        //check how liquid each ticker is 
         const {avgqty:avgqty1,latestPrice:latestPrice1} = await getTickerLiquidity(signalPositiveTicker)
         const {avgqty:avgqty2,latestPrice:latestPrice2} =await getTickerLiquidity(signalNegativeTicker)
         
+        //setting long and short ticker based on zScore sign
         if(signalPositive){
             longTicker = signalPositiveTicker
             shortTicker = signalNegativeTicker
@@ -59,8 +64,7 @@ const manageNewTrade = (killSwitch) => {
         const initialFillShort = avgliguidityShort * latestPriceShort
        // let initialTradeCapitalInjection = Math.min(initialFillLong,initialFillShort)
         let initialTradeCapitalInjection = 500
-        console.log(initialTradeCapitalInjection)
-        
+             
         if(initialTradeCapitalInjection>capitalLong){
             initialTradeCapital = capitalLong
         }else{
@@ -76,11 +80,10 @@ const manageNewTrade = (killSwitch) => {
         let orderStatusShort = ''
         let countLong = 0
         let countShort = 0
-
-        let isCalled = false;
-        let isCalled2 = false;
+        //continue to trade until trade is complete 
         while(killSwitch === 0){
             if(countLong === 0){
+                //calls initializeOrder() to execute long trade
                 const [longOrder] = await Promise.all([initializeOrder(longTicker,'Long',initialTradeCapitalInjection)])
                 
                 if(longOrder.order){
@@ -95,6 +98,7 @@ const manageNewTrade = (killSwitch) => {
             remainingCapitalLong = remainingCapitalLong-initialTradeCapitalInjection 
             
             if(countShort === 0){
+                //calls initializeOrder() to execute short trade
                 const [shortOrder] = await Promise.all([initializeOrder1(shortTicker,'Short',initialTradeCapitalInjection)])                
                 if(shortOrder.order){
                     countShort = 1
@@ -117,6 +121,7 @@ const manageNewTrade = (killSwitch) => {
                 console.log('killing')
                 killSwitch = 1
             }*/
+            //calls getLatestZscore() to check if its still above threshold
             let {latestZscore:updateZscore,signalPositive:signalPositiveUpdate} = await getLatestZscore();
             latestZscore = updateZscore
             console.log('latest zScore',latestZscore)
@@ -130,8 +135,11 @@ const manageNewTrade = (killSwitch) => {
                         orderStatusShort = await reviewOrder(shortTicker,shortOrderId,remainingCapitalShort,'Short')
                         console.log('Short',orderStatusShort)
                     }
+                    //check if order is still in process
                     if(orderStatusLong === "Order Active" || orderStatusShort === "Order Active") continue
                     if(orderStatusLong === "Partial Fill" || orderStatusShort === "Partial Fill") continue
+                    //check if trade is complete and set kill swicth
+                    //to 1 to exit while loop
                     if(orderStatusLong === "Trade Complete" && orderStatusShort === "Trade Complete"){
                         killSwitch = 1
                     }
@@ -140,6 +148,7 @@ const manageNewTrade = (killSwitch) => {
                         countShort = 0
                     }
 
+                    //if order failed set count to 0 to try and place again
                     if (orderStatusLong === 'Try Again'){
                         countLong = 0
                     }
@@ -148,6 +157,7 @@ const manageNewTrade = (killSwitch) => {
                     }
                     
                 }else{
+                    //if zScore not above threshold stop placing trades 
                     await client.cancelAllActiveOrders(signalPositiveTicker)
                     await client.cancelAllActiveOrders(signalNegativeTicker)
                     killSwitch = 1
@@ -156,6 +166,7 @@ const manageNewTrade = (killSwitch) => {
         }
         
     }
+    // check if zScore and sign still match if not set killSwitch to 2
     if(killSwitch === 1){
         if (signalSide === 'positive' && latestZscore < 0){
             killSwitch = 2

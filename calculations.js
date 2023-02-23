@@ -11,6 +11,11 @@ const {
 } = require('./botInfo')
 const { WebsocketClient } = require('bybit-api');
 
+
+/*
+takes an array of prices and returns an array of closing 
+prices by iterating over each price object in the array
+*/
 const getClosingPrice = (prices) => {
     if(prices !== null && prices !== undefined){
         let closePrices = [];
@@ -22,11 +27,21 @@ const getClosingPrice = (prices) => {
         return closePrices
     }
 }
+
+//arrays to store lattest bid and ask prices
 const bidItems1 = [];
 const askItems1 = [];
 const bidItems2 = [];
 const askItems2 = [];
 
+
+/* 
+This function takes a ticker symbol, an order book object, 
+a direction ("Long" or "Short"), and a capital amount, and 
+returns an object with the order price, stop loss, and quantity. 
+It also populates the bidItems and askItems arrays with 
+the bid and ask prices for the specified ticker symbol in the order book
+*/
 const getTradeDetails1 = (ticker,orderbook, direction = 'Long', capital) => {
     let priceRounding = 20;
     let quantityRounding = 20;
@@ -95,6 +110,13 @@ const getTradeDetails1 = (ticker,orderbook, direction = 'Long', capital) => {
     }
 } 
 
+/* 
+This function takes a ticker symbol, an order book object, 
+a direction ("Long" or "Short"), and a capital amount, and 
+returns an object with the order price, stop loss, and quantity. 
+It also populates the bidItems and askItems arrays with 
+the bid and ask prices for the specified ticker symbol in the order book
+*/
 const getTradeDetails2 = (ticker,orderbook, direction = 'Short', capital) => {
     let priceRounding = 20;
     let quantityRounding = 20;
