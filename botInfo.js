@@ -6,7 +6,7 @@ const fs = require('fs');
 // let ticker1 = 'AXSUSDT'
 let ticker1 = 'TLMUSDT'
 let ticker2 = 'SXPUSDT'
-let capital = 20000
+let capital = 10000
 
 signalPositiveTicker = ticker1;
 signalNegativeTicker = ticker2;

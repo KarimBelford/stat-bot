@@ -31,7 +31,7 @@ while(kill ===1){
             killSwitch = 0
         }else {
             console.log('clossing')
-            await closeAllPositions()
+            await closeAllPositions(signalPositiveTicker,signalNegativeTicker)
             killSwitch = 0
             startNewTrade = true
 

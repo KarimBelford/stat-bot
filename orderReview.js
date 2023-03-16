@@ -25,7 +25,7 @@ const reviewOrder = async(ticker,order_id,remainingCapital,direction) => {
                     ws.unsubscribe([`trade.${ticker}`])
                     console.log(positionQty,remainingCapital)
                     //check status of trade order
-                    if(positionQty >= remainingCapital && positionQty>0) resolve('Trade Complete');
+                    if(remainingCapital===0 && positionQty>0) resolve('Trade Complete');
 
                     if(status === 'Filled') resolve('Position Filled');
 

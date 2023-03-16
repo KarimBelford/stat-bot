@@ -26,20 +26,15 @@ const getLatestZscore = async() =>{
                     let {series1,series2} = await getTickerPrices()
                     
                     if(series1.length > 0 && series2.length > 0){
-                        // series1.pop()
-                        // series2.pop();
-                        // series1.push(orderPrice1);
-                        // series2.push(orderPrice2);
+                        series1.pop()
+                        series2.pop();
+                        series1.push(orderPrice1);
+                        series2.push(orderPrice2);
                         const hedgeRatio = calculateHedgeRatio(series1,series2)
                         const spread = calculateSpread(series1, series2,hedgeRatio);
                         const mean = calculateMean(spread);
                         const standardDeviation = calculateStandardDeviation(spread, mean);
-                        const zScores = []
-                        for (let i = 0; i < spread.length; i++) {
-                            zScores.push(calculateZScore(spread[i], mean, standardDeviation));
-                        }
-                        console.log(zScores)
-                        
+                        const zScores = spread.map((value) => calculateZScore(value, mean, standardDeviation));                        
                         latestZscore = zScores.pop()
                         console.log(latestZscore)
                         if(latestZscore > 0){
@@ -106,7 +101,7 @@ const calculateHedgeRatio = (series1, series2) => {
     return slope;
 }
 
-getLatestZscore()
+
 
 
 module.exports = {getLatestZscore}

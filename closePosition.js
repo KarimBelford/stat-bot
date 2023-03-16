@@ -1,6 +1,4 @@
 const {
-    ticker1,
-    ticker2,
     client
 } = require('./botInfo')
 
@@ -36,18 +34,29 @@ using the cancelAllActiveOrders() method from API.
 Then, it uses the getTickerPositionInfo() function to get the 
 side and size of each position, and places a market order to close each position
  */
-const closeAllPositions = async() => {
+const closeAllPositions = async(ticker1,ticker2) => {
 
     await client.cancelAllActiveOrders({symbol:ticker1});
     await client.cancelAllActiveOrders({symbol:ticker2});
 
-    const { side: side1, size: size1 } = await getTickerPositionInfo(ticker1);
-    const { side: side2, size: size2 } = await getTickerPositionInfo(ticker2);
+    await closePosition(ticker1)
+    await closePosition(ticker2)
 
-    await placeCloseOrder(ticker1,side1,size1);
-    await placeCloseOrder(ticker2,side2,size2);
+    return 0;
+};
 
-    return 0
+const closePosition = async (ticker) => {
+    const { side, size } = await getTickerPositionInfo(ticker);
+
+    // Place a close order
+    await placeCloseOrder(ticker, side, size);
+
+    // Check if the position is closed and retry if necessary
+    let { size: updatedSize } = await getTickerPositionInfo(ticker);
+    while (updatedSize > 0) {
+        await placeCloseOrder(ticker, side, updatedSize);
+        updatedSize = (await getTickerPositionInfo(ticker)).size;
+    }
 }
 
 /*

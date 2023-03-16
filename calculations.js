@@ -60,6 +60,7 @@ const getTradeDetails1 = (ticker,orderbook, direction = 'Long', capital) => {
             priceRounding = roundingTicker2;
             quantityRounding= quantityRoundingTicker2;
         }
+        
         if(ticker === ticker1){
             orderbook.data.forEach(level =>{
                 if(level['symbol']===ticker1 && level['side'] === 'Buy'){
